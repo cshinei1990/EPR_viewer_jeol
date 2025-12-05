@@ -6,6 +6,7 @@ from tkinter import filedialog, messagebox
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 try:
@@ -435,6 +436,9 @@ class EPRViewerApp(tk.Tk):
         show_btn = tk.Button(btn_frame, text="選択スペクトルを表示", command=self.show_selected_spectra)
         show_btn.pack(side=tk.LEFT)
 
+        show_new_win_btn = tk.Button(btn_frame, text="別画面で表示", command=self.show_selected_spectra_in_new_window)
+        show_new_win_btn.pack(side=tk.LEFT, padx=5)
+
         delete_btn = tk.Button(btn_frame, text="選択スペクトルを削除", command=self.delete_selected_spectra)
         delete_btn.pack(side=tk.LEFT, padx=5)
 
@@ -842,6 +846,41 @@ class EPRViewerApp(tk.Tk):
             self.pointer_source_y = last_spec["y"]
 
         self._draw_peak_markers()
+
+    def show_selected_spectra_in_new_window(self):
+        selection = self.spectrum_listbox.curselection()
+        if not selection:
+            messagebox.showwarning("警告", "表示したいスペクトルをリストから選択してください。")
+            return
+
+        # 新しいウィンドウを作成
+        new_win = tk.Toplevel(self)
+        new_win.title("選択スペクトル (別画面)")
+        new_win.geometry("800x600")
+
+        # グラフ描画用フレーム
+        canvas_frame = tk.Frame(new_win)
+        canvas_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        fig = Figure(figsize=(7, 5))
+        ax = fig.add_subplot(111)
+
+        for idx in selection:
+            spec = self.saved_spectra[idx]
+            ax.plot(spec["x"], spec["y"], linewidth=1.0, label=spec["label"])
+
+        ax.set_xlabel("Magnetic field (G, corrected)")
+        ax.set_ylabel("Intensity (normalized arb. units)")
+        ax.grid(True)
+        ax.legend(fontsize=8)
+        ax.set_title("保存スペクトル (別画面)")
+
+        canvas = FigureCanvasTkAgg(fig, master=canvas_frame)
+        toolbar = NavigationToolbar2Tk(canvas, canvas_frame)
+        toolbar.update()
+        toolbar.pack(side=tk.TOP, fill=tk.X)
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        canvas.draw()
 
     def delete_selected_spectra(self):
         selection = list(self.spectrum_listbox.curselection())
